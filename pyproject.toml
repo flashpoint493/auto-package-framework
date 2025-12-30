@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auto-package-framework"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI驱动的自动化Python包创建、开发和发布框架"
 readme = "README.md"
 requires-python = ">=3.8"
