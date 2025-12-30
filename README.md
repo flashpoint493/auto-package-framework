@@ -44,9 +44,11 @@
   <a href="https://github.com/flashpoint493/auto-package-framework/issues">Issue Tracker</a>
 </p>
 
-> AI驱动的自动化Python包创建、开发和发布框架
+---
 
-> **⚠️ Development Status**: This project is under active development. APIs may change before v1.0.0 release.
+**AI驱动的自动化Python包创建、开发和发布框架**
+
+> ⚠️ **Development Status**: This project is under active development. APIs may change before v1.0.0 release.
 
 ## Quick Try
 
