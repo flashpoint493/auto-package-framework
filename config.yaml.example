@@ -1,0 +1,23 @@
+# Auto Package Framework 配置文件示例
+# 复制此文件为 config.yaml 并填入你的凭据
+
+github:
+  username: your_github_username
+  # 推荐使用环境变量 GITHUB_TOKEN 而不是直接写在这里
+  token: your_github_personal_access_token
+
+pypi:
+  username: your_pypi_username
+  # 推荐使用API Token而不是密码
+  # password: your_pypi_password
+  token: pypi-your_api_token_here
+
+ai:
+  provider: openai  # 或 anthropic
+  # 推荐使用环境变量 OPENAI_API_KEY 或 ANTHROPIC_API_KEY
+  api_key: your_ai_api_key
+  model: gpt-4  # 或 claude-3-opus-20240229
+
+# 模板路径（相对于此配置文件）
+template_path: ../PROJECT_TEMPLATE
+
