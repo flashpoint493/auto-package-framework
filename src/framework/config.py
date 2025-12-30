@@ -126,6 +126,41 @@ class Config:
     @property
     def template_path(self) -> Path:
         """获取模板路径"""
-        template_str = self.get("template_path", "../PROJECT_TEMPLATE")
-        return Path(template_str).resolve()
+        # 首先检查配置文件中指定的路径（允许用户自定义模板）
+        template_str = self.get("template_path")
+        if template_str:
+            custom_path = Path(template_str).resolve()
+            if custom_path.exists():
+                return custom_path
+        
+        # 使用内置模板（包内模板）
+        # 获取framework包的安装路径
+        try:
+            import importlib.util
+            spec = importlib.util.find_spec("framework")
+            if spec and spec.origin:
+                # 从包的__file__获取路径
+                framework_path = Path(spec.origin).parent
+            else:
+                # 回退到当前文件路径
+                framework_path = Path(__file__).parent
+        except Exception:
+            # 如果导入失败，使用当前文件路径
+            framework_path = Path(__file__).parent
+        
+        builtin_template = framework_path / "templates"
+        if builtin_template.exists():
+            return builtin_template.resolve()
+        
+        # 回退到相对路径（向后兼容，用于开发环境）
+        fallback_path = Path(__file__).parent.parent.parent.parent / "PROJECT_TEMPLATE"
+        if fallback_path.exists():
+            return fallback_path.resolve()
+        
+        raise ValueError(
+            f"找不到模板目录。请确保：\n"
+            f"1. 模板已内置到包中（位于 {builtin_template}）\n"
+            f"2. 或在配置文件中指定 template_path\n"
+            f"3. 或在项目根目录存在 PROJECT_TEMPLATE 目录"
+        )
 

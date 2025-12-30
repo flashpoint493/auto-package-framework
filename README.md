@@ -64,7 +64,8 @@ Auto Package Framework 是一个自动化框架，能够帮助你从想法到发
 
 ### Key Features
 
-- **自动化项目生成**: 基于模板自动创建完整的Python包项目结构
+- **自动化项目生成**: 基于内置模板自动创建完整的Python包项目结构
+- **内置专业模板**: 包含完整的项目模板（CI/CD、文档、代码规范等），开箱即用
 - **AI代码生成**: 使用AI根据项目想法自动生成高质量代码
 - **GitHub集成**: 自动创建仓库、推送代码、设置CI/CD
 - **PyPI发布**: 自动构建和发布包到PyPI
@@ -216,8 +217,11 @@ ai:
   api_key: your_api_key
   model: gpt-4
 
-template_path: ../PROJECT_TEMPLATE
+# 模板路径（可选，默认使用内置模板）
+# template_path: /path/to/custom/template
 ```
+
+> **注意**: 框架已内置完整的项目模板，无需额外配置。只有在需要使用自定义模板时才需要指定 `template_path`。
 
 ## Usage Patterns
 
