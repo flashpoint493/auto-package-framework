@@ -321,11 +321,13 @@ for name, idea in projects:
 ## Documentation
 
 - [快速开始指南](./docs/guides/QUICK_START.md) - 5分钟快速上手
+- [开发者快速开始指南](./docs/guides/DEVELOPER_QUICK_START.md) - 详细使用指南
 - [发布指南](./docs/guides/PUBLISH_GUIDE.md) - 详细发布说明
 - [外部工具说明](./docs/development/EXTERNAL_TOOLS.md) - 所需工具和API
 - [最小原型测试](./docs/development/MINIMAL_PROTOTYPE.md) - 测试指南
 - [文档索引](./docs/README.md) - 完整文档列表
 - [项目总结](./SUMMARY.md) - 项目概述
+- [LLM上下文文件](./llms.txt) - AI助手项目上下文（llms.txt）
 
 ## Requirements
 

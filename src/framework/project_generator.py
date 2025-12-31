@@ -1,14 +1,20 @@
-"""项目生成器模块 - 从模板创建新项目"""
+"""项目生成器模块 - 从模板创建新项目（基于 Cookiecutter）"""
 
-import shutil
+import json
 from pathlib import Path
 from typing import Dict, Any, Optional
-import re
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from datetime import datetime
+
+try:
+    import cookiecutter.main as cc_main
+    import cookiecutter.generate as cc_generate
+    COOKIECUTTER_AVAILABLE = True
+except ImportError:
+    COOKIECUTTER_AVAILABLE = False
 
 
 class ProjectGenerator:
-    """从模板生成新项目"""
+    """从模板生成新项目（使用 Cookiecutter）"""
 
     def __init__(self, template_path: Path):
         """
@@ -21,11 +27,20 @@ class ProjectGenerator:
         if not self.template_path.exists():
             raise ValueError(f"模板路径不存在: {template_path}")
 
-        # 初始化Jinja2环境
-        self.env = Environment(
-            loader=FileSystemLoader(str(self.template_path)),
-            autoescape=select_autoescape(["html", "xml"]),
-        )
+        # 检查是否是 cookiecutter 模板
+        self.cookiecutter_json = self.template_path / "cookiecutter.json"
+        self.is_cookiecutter = self.cookiecutter_json.exists()
+
+        if not COOKIECUTTER_AVAILABLE:
+            raise ImportError(
+                "cookiecutter 未安装。请运行: pip install cookiecutter"
+            )
+
+        if not self.is_cookiecutter:
+            raise ValueError(
+                f"模板目录 {template_path} 不是有效的 cookiecutter 模板。"
+                f"缺少 cookiecutter.json 文件。"
+            )
 
     def generate(
         self,
@@ -40,7 +55,7 @@ class ProjectGenerator:
         Args:
             project_name: 项目名称
             output_path: 输出路径
-            replacements: 替换映射，如 {"USERNAME": "myuser", "PROJECT_NAME": "mypackage"}
+            replacements: 替换映射，如 {"github_username": "myuser", "author_name": "My Name"}
             project_idea: 项目想法描述（可选）
 
         Returns:
@@ -49,11 +64,42 @@ class ProjectGenerator:
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # 准备替换映射
-        replacements = self._prepare_replacements(project_name, replacements)
+        # 准备 cookiecutter 上下文
+        context = self._prepare_context(project_name, replacements)
 
-        # 复制模板文件
-        self._copy_template_files(output_path, replacements)
+        # 使用 cookiecutter 生成项目
+        # cookiecutter 会在 output_dir 下创建项目目录（使用 project_name）
+        # 我们需要在 output_path 的父目录生成，然后移动到正确的位置
+        parent_dir = output_path.parent
+        expected_project_dir = parent_dir / project_name
+
+        # 使用 cookiecutter 生成
+        cc_generate.generate_files(
+            repo_dir=str(self.template_path),
+            context=context,
+            output_dir=str(parent_dir),
+            overwrite_if_exists=True,
+        )
+
+        # cookiecutter 会使用 project_name 作为目录名
+        # 检查生成的目录
+        if expected_project_dir.exists():
+            # 如果生成的目录名与期望的不同，需要重命名
+            if expected_project_dir != output_path:
+                import shutil
+                if output_path.exists():
+                    shutil.rmtree(output_path)
+                expected_project_dir.rename(output_path)
+            else:
+                output_path = expected_project_dir
+        else:
+            # 如果 cookiecutter 没有创建预期的目录，检查是否有其他目录
+            # 这可能是因为模板结构不同
+            # 在这种情况下，我们假设文件直接生成在 parent_dir 下
+            # 需要手动处理（这种情况不应该发生，但为了健壮性）
+            raise RuntimeError(
+                f"Cookiecutter 未在预期位置创建项目目录: {expected_project_dir}"
+            )
 
         # 如果提供了项目想法，写入PROJECT_IDEA.md
         if project_idea:
@@ -61,173 +107,65 @@ class ProjectGenerator:
 
         return output_path
 
-    def _prepare_replacements(
+    def _prepare_context(
         self, project_name: str, replacements: Dict[str, str]
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
-        准备替换映射
+        准备 cookiecutter 上下文
 
         Args:
             project_name: 项目名称
             replacements: 用户提供的替换映射
 
         Returns:
-            完整的替换映射
+            cookiecutter 上下文字典
         """
+        # 读取 cookiecutter.json 获取默认值
+        with open(self.cookiecutter_json, 'r', encoding='utf-8') as f:
+            default_context = json.load(f)
+
         # 生成包名（从项目名转换）
         package_name = project_name.lower().replace("-", "_").replace(" ", "_")
+        project_slug = project_name.lower().replace("_", "-").replace(" ", "-")
 
         # 计算主类名（从项目名生成，如 "my-package" -> "MyPackage"）
-        main_class = "".join(word.capitalize() for word in project_name.replace("_", "-").split("-"))
-        
-        # 默认替换映射
-        default_replacements = {
-            "[Project Name]": project_name,
-            "PROJECT_NAME": project_name.upper().replace("-", "_"),
-            "project-name": project_name.lower().replace("_", "-"),
-            "your-package-name": package_name,
-            "your_package_name": package_name,
-            "USERNAME": replacements.get("USERNAME", "USERNAME"),
-            "your.email@example.com": replacements.get("email", "your.email@example.com"),
-            "Your Name": replacements.get("author", "Your Name"),
-            # llms.txt 模板变量
-            "PACKAGE_NAME": package_name,
-            "PROJECT_DESCRIPTION": replacements.get("PROJECT_DESCRIPTION", f"A Python package: {project_name}"),
-            "MAIN_FUNCTIONALITY": replacements.get("MAIN_FUNCTIONALITY", "provides core functionality"),
-            "ADDITIONAL_DESCRIPTION": replacements.get("ADDITIONAL_DESCRIPTION", ""),
-            "PYTHON_VERSION": replacements.get("PYTHON_VERSION", "3.8"),
-            "PLATFORMS": replacements.get("PLATFORMS", "Windows, macOS, Linux"),
-            "LICENSE": replacements.get("LICENSE", "MIT"),
-            "MAIN_CLASS": main_class,
-            "UTILITY_CLASS": replacements.get("UTILITY_CLASS", "Utility"),
-            "INTEGRATION_CLASS": replacements.get("INTEGRATION_CLASS", "Integration"),
-            "UTILITY_FUNCTION": replacements.get("UTILITY_FUNCTION", "utility_function"),
+        main_class = "".join(
+            word.capitalize() for word in project_name.replace("_", "-").split("-")
+        )
+
+        # 准备上下文，覆盖默认值
+        context = {
+            "project_name": project_name,
+            "package_name": package_name,
+            "project_slug": project_slug,
+            "main_class": main_class,
+            # 从 replacements 获取或使用默认值
+            "github_username": replacements.get("USERNAME") or replacements.get("github_username") or default_context.get("github_username", "USERNAME"),
+            "author_name": replacements.get("author") or replacements.get("author_name") or default_context.get("author_name", "Your Name"),
+            "author_email": replacements.get("email") or replacements.get("author_email") or default_context.get("author_email", "your.email@example.com"),
+            "project_description": replacements.get("PROJECT_DESCRIPTION") or replacements.get("project_description") or default_context.get("project_description", f"A Python package: {project_name}"),
+            "main_functionality": replacements.get("MAIN_FUNCTIONALITY") or replacements.get("main_functionality") or default_context.get("main_functionality", "provides core functionality"),
+            "additional_description": replacements.get("ADDITIONAL_DESCRIPTION") or replacements.get("additional_description") or default_context.get("additional_description", ""),
+            "python_version": replacements.get("PYTHON_VERSION") or replacements.get("python_version") or default_context.get("python_version", "3.8"),
+            "platforms": replacements.get("PLATFORMS") or replacements.get("platforms") or default_context.get("platforms", "Windows, macOS, Linux"),
+            "license": replacements.get("LICENSE") or replacements.get("license") or default_context.get("license", "MIT"),
+            "utility_class": replacements.get("UTILITY_CLASS") or replacements.get("utility_class") or default_context.get("utility_class", "Utility"),
+            "integration_class": replacements.get("INTEGRATION_CLASS") or replacements.get("integration_class") or default_context.get("integration_class", "Integration"),
+            "utility_function": replacements.get("UTILITY_FUNCTION") or replacements.get("utility_function") or default_context.get("utility_function", "utility_function"),
+            "version": default_context.get("version", "0.1.0"),
         }
 
-        # 合并用户提供的替换
-        default_replacements.update(replacements)
+        # 合并用户提供的其他替换（覆盖上面的值）
+        for key, value in replacements.items():
+            if key not in ["USERNAME", "author", "email", "PROJECT_DESCRIPTION", 
+                          "MAIN_FUNCTIONALITY", "ADDITIONAL_DESCRIPTION", 
+                          "PYTHON_VERSION", "PLATFORMS", "LICENSE",
+                          "UTILITY_CLASS", "INTEGRATION_CLASS", "UTILITY_FUNCTION"]:
+                # 转换为小写下划线格式（cookiecutter 标准）
+                cookiecutter_key = key.lower().replace("-", "_")
+                context[cookiecutter_key] = value
 
-        return default_replacements
-
-    def _copy_template_files(
-        self, output_path: Path, replacements: Dict[str, str]
-    ) -> None:
-        """
-        复制并处理模板文件
-
-        Args:
-            output_path: 输出路径
-            replacements: 替换映射
-        """
-        # 需要忽略的文件和目录
-        ignore_patterns = [
-            ".git",
-            "__pycache__",
-            "*.pyc",
-            ".pytest_cache",
-            ".mypy_cache",
-            ".ruff_cache",
-            "htmlcov",
-            ".coverage",
-            "coverage.xml",
-            "dist",
-            "build",
-            "*.egg-info",
-        ]
-
-        # 遍历模板目录
-        for item in self.template_path.rglob("*"):
-            if item.is_dir():
-                continue
-
-            # 检查是否应该忽略
-            if any(pattern in str(item) for pattern in ignore_patterns):
-                continue
-
-            # 计算相对路径
-            rel_path = item.relative_to(self.template_path)
-            output_file = output_path / rel_path
-
-            # 创建目录
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-
-            # 处理文件
-            # 处理 .template 文件（使用 Jinja2 渲染）
-            if item.suffix == ".template" or item.name.endswith(".template"):
-                self._process_template_file(item, output_file, replacements)
-            elif item.suffix in [".md", ".txt", ".toml", ".yaml", ".yml", ".json"]:
-                # 文本文件，进行替换
-                self._process_text_file(item, output_file, replacements)
-            else:
-                # 二进制文件，直接复制
-                shutil.copy2(item, output_file)
-
-    def _process_text_file(
-        self, source: Path, target: Path, replacements: Dict[str, str]
-    ) -> None:
-        """
-        处理文本文件，进行替换
-
-        Args:
-            source: 源文件路径
-            target: 目标文件路径
-            replacements: 替换映射
-        """
-        try:
-            # 读取源文件
-            content = source.read_text(encoding="utf-8")
-
-            # 执行替换
-            for old, new in replacements.items():
-                content = content.replace(old, new)
-
-            # 写入目标文件
-            target.write_text(content, encoding="utf-8")
-        except Exception as e:
-            # 如果处理失败，直接复制
-            print(f"警告: 处理文件 {source} 时出错: {e}，将直接复制")
-            shutil.copy2(source, target)
-    
-    def _process_template_file(
-        self, source: Path, target: Path, replacements: Dict[str, str]
-    ) -> None:
-        """
-        处理模板文件（.template），使用 Jinja2 渲染
-        
-        Args:
-            source: 源文件路径
-            target: 目标文件路径（移除 .template 后缀）
-            replacements: 替换映射
-        """
-        try:
-            # 移除 .template 后缀作为目标文件名
-            if target.suffix == ".template" or target.name.endswith(".template"):
-                # 移除 .template 后缀
-                target = target.with_suffix("")
-                if target.name.endswith(".template"):
-                    target = target.parent / target.name.replace(".template", "")
-            
-            # 获取模板相对路径
-            template_name = source.relative_to(self.template_path).as_posix()
-            
-            # 使用 Jinja2 渲染模板
-            template = self.env.get_template(template_name)
-            
-            # 准备模板变量（使用 replacements，已经包含了所有需要的变量）
-            template_vars = replacements.copy()
-            
-            # 渲染模板
-            content = template.render(**template_vars)
-            
-            # 写入目标文件
-            target.write_text(content, encoding="utf-8")
-        except Exception as e:
-            # 如果模板渲染失败，尝试作为普通文本文件处理
-            print(f"警告: 模板渲染失败 {source}, 使用普通文本处理: {e}")
-            # 移除 .template 后缀后处理
-            if target.suffix == ".template" or target.name.endswith(".template"):
-                target = target.with_suffix("")
-            self._process_text_file(source, target, replacements)
+        return context
 
     def _write_project_idea(
         self, output_path: Path, project_idea: str, project_name: str
@@ -242,12 +180,34 @@ class ProjectGenerator:
         """
         idea_file = output_path / "PROJECT_IDEA.md"
 
-        # 读取模板（如果存在）
+        # 如果文件已存在（从模板生成），读取并更新
         if idea_file.exists():
             content = idea_file.read_text(encoding="utf-8")
+            # 在文件开头添加项目想法
+            idea_section = f"""# Project Idea & Kickoff Guide
+
+> **🎯 Purpose**: This is your project planning document.
+
+## 📝 Project Concept
+
+### What problem are we solving?
+
+{project_idea}
+
+---
+
+"""
+            # 如果内容中还没有项目想法部分，添加它
+            if "What problem are we solving?" not in content:
+                content = idea_section + content
+            else:
+                # 替换现有的项目想法部分
+                import re
+                pattern = r"### What problem are we solving?\s*\n\s*\n.*?(?=\n### |\n---|\Z)"
+                content = re.sub(pattern, f"### What problem are we solving?\n\n{project_idea}", content, flags=re.DOTALL)
         else:
             # 使用基本模板
-            content = """# Project Idea & Kickoff Guide
+            content = f"""# Project Idea & Kickoff Guide
 
 > **🎯 Purpose**: This is your project planning document.
 
@@ -302,17 +262,8 @@ class ProjectGenerator:
 
 ---
 
-**Last Updated**: {date}
+**Last Updated**: {datetime.now().strftime("%Y-%m-%d")}
 **Status**: 🟡 Planning
 """
 
-        # 替换占位符
-        from datetime import datetime
-
-        content = content.format(
-            project_idea=project_idea,
-            date=datetime.now().strftime("%Y-%m-%d"),
-        )
-
         idea_file.write_text(content, encoding="utf-8")
-

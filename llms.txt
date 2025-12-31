@@ -1,0 +1,577 @@
+# auto-package-framework
+
+> AI驱动的自动化Python包创建、开发和发布框架
+
+## Overview
+
+auto-package-framework 是一个自动化框架，能够帮助你从想法到发布，全自动创建Python包。只需提供一个项目想法，框架就能自动生成项目结构、编写代码、创建GitHub仓库并发布到PyPI。
+
+- **Package**: `pip install auto-package-framework`
+- **Python**: 3.8+
+- **Platforms**: Windows | macOS | Linux
+- **License**: MIT
+- **Repository**: https://github.com/flashpoint493/auto-package-framework
+- **PyPI**: https://pypi.org/project/auto-package-framework/
+
+## Quick Start
+
+### Installation
+
+```bash
+# Basic installation
+pip install auto-package-framework
+
+# With development dependencies
+pip install auto-package-framework[dev]
+
+# Using uvx (no installation needed)
+uvx auto-package-framework --help
+```
+
+### Basic Usage
+
+```python
+from framework.core import AutoPackageFramework
+
+# Initialize framework
+framework = AutoPackageFramework()
+
+# Create package
+result = framework.create_package(
+    project_name="my-awesome-package",
+    project_idea="一个用于自动化任务调度的Python包",
+    github_repo="my-awesome-package",  # Optional
+    auto_publish=False,  # Optional
+)
+```
+
+### Command Line Usage
+
+```bash
+# Basic usage
+auto-package \
+    --project-name "my-package" \
+    --idea "我的项目描述"
+
+# Full workflow (generate + GitHub + PyPI)
+auto-package \
+    --project-name "my-package" \
+    --idea "我的项目描述" \
+    --github-repo "my-package" \
+    --publish
+```
+
+## Core API Reference
+
+### AutoPackageFramework Class
+
+The main class for automating package creation and publishing.
+
+#### Constructor
+
+```python
+AutoPackageFramework(config_path: Optional[str] = None)
+```
+
+- `config_path`: Path to configuration file (optional, defaults to `config.yaml`)
+
+#### Main Method: create_package
+
+```python
+def create_package(
+    self,
+    project_name: str,
+    project_idea: str,
+    output_path: Optional[Path] = None,
+    github_repo: Optional[str] = None,
+    auto_publish: bool = False,
+    replacements: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]
+```
+
+Creates and optionally publishes a complete Python package.
+
+**Parameters:**
+- `project_name`: Project name
+- `project_idea`: Project idea/description
+- `output_path`: Output directory (default: current directory/project_name)
+- `github_repo`: GitHub repository name (optional)
+- `auto_publish`: Whether to automatically publish to PyPI (default: False)
+- `replacements`: Additional template replacements (optional)
+
+**Returns:**
+Dictionary containing:
+- `success`: Boolean indicating success
+- `project_path`: Path to generated project
+- `steps`: List of completed steps
+- `errors`: List of errors (if any)
+- `github_repo`: GitHub repository URL (if created)
+- `pypi_published`: Whether published to PyPI
+
+### Config Class
+
+Configuration management class supporting YAML files and environment variables.
+
+#### Properties
+
+```python
+config.github_token           # GitHub Personal Access Token
+config.github_username        # GitHub username
+config.pypi_token            # PyPI API Token
+config.pypi_username         # PyPI username
+config.pypi_password         # PyPI password (legacy)
+config.ai_api_key            # AI API key (OpenAI or Anthropic)
+config.ai_provider           # AI provider ("openai" or "anthropic")
+config.ai_model              # AI model name
+config.template_path         # Path to project template
+config.code_generation_config  # Code generation configuration
+```
+
+### ProjectGenerator Class
+
+Generates project structure from templates using Jinja2.
+
+#### Main Method: generate
+
+```python
+def generate(
+    self,
+    project_name: str,
+    output_path: Path,
+    replacements: Dict[str, str],
+    project_idea: str,
+) -> Path
+```
+
+Generates project structure from template.
+
+### GitHubClient Class
+
+Handles GitHub repository operations.
+
+#### Methods
+
+```python
+github_client.create_repository(name: str, description: str, private: bool) -> Repository
+github_client.repository_exists(name: str) -> bool
+github_client.push_local_repo(local_path: Path, repo_name: str) -> None
+```
+
+### PyPIClient Class
+
+Handles PyPI package publishing.
+
+#### Methods
+
+```python
+pypi_client.publish(project_path: Path, repository: str = "pypi") -> None
+pypi_client.build(project_path: Path) -> Tuple[Path, Path]
+```
+
+### CodeGenerator Classes
+
+Abstract interface for code generation with multiple implementations.
+
+#### CodeGenerator (Abstract Base Class)
+
+```python
+class CodeGenerator(ABC):
+    @abstractmethod
+    def generate_code(
+        self,
+        project_idea: str,
+        project_structure: Dict[str, Any],
+        existing_files: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, str]:
+        """Generate code files"""
+    
+    @abstractmethod
+    def can_generate(self) -> bool:
+        """Check if code can be generated"""
+    
+    @abstractmethod
+    def get_status(self) -> str:
+        """Get generator status"""
+```
+
+#### Implementations
+
+1. **ApiCodeGenerator**: Uses OpenAI or Anthropic API for code generation
+2. **CursorCodeGenerator**: Generates dialogue prompts for Cursor IDE
+
+#### Factory
+
+```python
+CodeGeneratorFactory.create(
+    mode: str,
+    config: Dict[str, Any],
+    project_path: Path,
+) -> CodeGenerator
+```
+
+Supported modes: `"api"`, `"cursor"`, `"agent"` (future)
+
+### AIDeveloper Class (Legacy, kept for backward compatibility)
+
+Legacy AI code generator supporting OpenAI and Anthropic.
+
+```python
+ai_developer = AIDeveloper(
+    provider="openai",  # or "anthropic"
+    api_key="sk-xxxxx",
+    model="gpt-4",  # or "claude-3-opus-20240229"
+)
+
+generated_files = ai_developer.generate_code(
+    project_idea="...",
+    project_structure={...},
+    existing_files={...},
+)
+```
+
+## Architecture
+
+### Core Components
+
+```
+AutoPackageFramework (核心工作流引擎)
+├── Config (配置管理)
+├── ProjectGenerator (项目生成器)
+│   └── Templates (内置模板，基于 python-package-template)
+├── CodeGenerator (代码生成器，多模式支持)
+│   ├── ApiCodeGenerator (API模式)
+│   └── CursorCodeGenerator (Cursor IDE模式)
+├── GitHubClient (GitHub集成)
+└── PyPIClient (PyPI发布)
+```
+
+### Workflow
+
+```
+用户输入想法
+    ↓
+1. 解析项目需求 (PROJECT_IDEA.md格式)
+    ↓
+2. 从模板生成项目结构 (内置模板或自定义模板)
+    ↓
+3. AI生成初始代码 (API模式或Cursor模式)
+    ↓
+4. 创建GitHub仓库并推送 (可选)
+    ↓
+5. 构建包
+    ↓
+6. 发布到PyPI (可选)
+```
+
+### Project Structure
+
+```
+auto_package_framework/
+├── src/
+│   └── framework/
+│       ├── __init__.py              # Package initialization
+│       ├── config.py                # Configuration management
+│       ├── core.py                  # Core workflow engine
+│       ├── project_generator.py     # Project generator
+│       ├── github_client.py         # GitHub client
+│       ├── pypi_client.py           # PyPI client
+│       ├── ai_developer.py          # Legacy AI developer
+│       ├── code_generator.py        # Code generator (multi-mode)
+│       ├── cli.py                   # CLI interface
+│       └── templates/               # Built-in project templates
+│           ├── README_TEMPLATE.md
+│           ├── pyproject.toml
+│           ├── llms.txt.template
+│           └── .github/             # GitHub workflows
+├── cursor_skill/                    # Cursor Skill implementation
+│   ├── SKILL.md
+│   └── scripts/create_package.py
+├── docs/                            # Documentation
+│   ├── guides/
+│   │   ├── DEVELOPER_QUICK_START.md
+│   │   └── QUICK_START.md
+│   └── development/
+│       ├── ARCHITECTURE_DESIGN.md
+│       └── CURSOR_SKILL_PROPOSAL.md
+└── tests/                           # Tests
+```
+
+## Configuration
+
+### Environment Variables (Recommended)
+
+```bash
+# GitHub
+export GITHUB_TOKEN="ghp_xxxxx"
+export GITHUB_USERNAME="your_username"
+
+# PyPI
+export PYPI_TOKEN="pypi-xxxxx"
+# Or legacy credentials
+export PYPI_USERNAME="your_username"
+export PYPI_PASSWORD="your_password"
+
+# AI (for API mode)
+export OPENAI_API_KEY="sk-xxxxx"
+# Or
+export ANTHROPIC_API_KEY="sk-ant-xxxxx"
+
+# Code generation mode (optional, defaults to "api")
+export CODE_GEN_MODE="api"  # or "cursor"
+```
+
+### Configuration File (config.yaml)
+
+```yaml
+github:
+  username: your_github_username
+  # token via environment variable (recommended)
+
+pypi:
+  # token via environment variable (recommended)
+
+ai:
+  provider: openai  # or "anthropic"
+  # api_key via environment variable (recommended)
+  model: gpt-4
+
+code_generation:
+  mode: api  # or "cursor"
+  # Additional mode-specific config
+
+# Template path (optional, defaults to built-in templates)
+# template_path: /path/to/custom/template
+```
+
+## Usage Patterns
+
+### Pattern 1: Local Generation Only
+
+Best for: **Testing, prototyping**
+
+```python
+framework = AutoPackageFramework()
+result = framework.create_package(
+    project_name="test-package",
+    project_idea="测试项目",
+    auto_publish=False,
+)
+```
+
+### Pattern 2: Generation + GitHub
+
+Best for: **Open source projects**
+
+```python
+result = framework.create_package(
+    project_name="my-package",
+    project_idea="我的项目描述",
+    github_repo="my-package",
+    auto_publish=False,
+)
+```
+
+### Pattern 3: Full Workflow
+
+Best for: **Production releases**
+
+```python
+result = framework.create_package(
+    project_name="production-package",
+    project_idea="生产环境使用的包",
+    github_repo="production-package",
+    auto_publish=True,
+)
+```
+
+## Code Generation Modes
+
+### Mode 1: API Mode (Default)
+
+Uses OpenAI or Anthropic API to generate code automatically.
+
+**Requirements:**
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable
+- API mode configured in config
+
+**Usage:**
+```python
+# Automatically used when AI API key is provided
+framework = AutoPackageFramework()
+result = framework.create_package(...)
+```
+
+### Mode 2: Cursor IDE Mode
+
+Generates dialogue prompts for Cursor IDE, where user manually generates code.
+
+**Requirements:**
+- No AI API key needed
+- Code generation happens in Cursor IDE
+
+**Usage:**
+```yaml
+# config.yaml
+code_generation:
+  mode: cursor
+```
+
+**Cursor Skill:**
+The framework includes a Cursor Skill in `cursor_skill/` directory that can be used directly in Cursor IDE.
+
+## Built-in Templates
+
+The framework includes built-in professional templates based on [python-package-template](https://github.com/flashpoint493/python-package-template), including:
+
+- Complete project structure
+- CI/CD workflows (GitHub Actions)
+- Documentation templates
+- Code quality tools (ruff, mypy, pre-commit)
+- Testing framework setup
+- `llms.txt.template` for AI context
+
+Templates are automatically used unless a custom `template_path` is specified.
+
+## Key Imports
+
+```python
+from framework.core import AutoPackageFramework
+from framework.config import Config
+from framework.project_generator import ProjectGenerator
+from framework.github_client import GitHubClient
+from framework.pypi_client import PyPIClient
+from framework.code_generator import CodeGenerator, CodeGeneratorFactory
+from framework.ai_developer import AIDeveloper  # Legacy
+```
+
+## Examples
+
+### Example 1: Basic Package Creation
+
+```python
+from framework.core import AutoPackageFramework
+
+framework = AutoPackageFramework()
+result = framework.create_package(
+    project_name="data-processor",
+    project_idea="一个用于数据清洗和转换的Python包",
+)
+
+if result["success"]:
+    print(f"项目已创建: {result['project_path']}")
+else:
+    print(f"错误: {result['errors']}")
+```
+
+### Example 2: Full Workflow with GitHub and PyPI
+
+```python
+from framework.core import AutoPackageFramework
+
+framework = AutoPackageFramework(config_path="config.yaml")
+
+result = framework.create_package(
+    project_name="my-awesome-package",
+    project_idea="一个自动化工具包",
+    github_repo="my-awesome-package",
+    auto_publish=True,
+    replacements={
+        "USERNAME": "flashpoint493",
+        "email": "user@example.com",
+    },
+)
+
+print(f"Success: {result['success']}")
+print(f"Steps: {result['steps']}")
+if result.get("github_repo"):
+    print(f"GitHub: {result['github_repo']}")
+```
+
+### Example 3: Using Cursor IDE Mode
+
+```python
+from framework.core import AutoPackageFramework
+
+# Code generation will happen in Cursor IDE
+# No AI API key needed
+framework = AutoPackageFramework()
+
+result = framework.create_package(
+    project_name="cursor-project",
+    project_idea="使用Cursor IDE生成的包",
+    # Code generation mode is set in config.yaml
+)
+```
+
+## Related Repositories
+
+### python-package-template
+
+- **Repository**: https://github.com/flashpoint493/python-package-template
+- **Purpose**: Professional Python package template
+- **Status**: Embedded in auto-package-framework as built-in templates
+- **Usage**: Automatically used by framework, or can be used standalone
+
+The framework's built-in templates are based on this repository, ensuring consistency and best practices.
+
+## Development
+
+### Setup Development Environment
+
+```bash
+git clone https://github.com/flashpoint493/auto-package-framework.git
+cd auto-package-framework
+pip install -e ".[dev]"
+pre-commit install
+pytest
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src --cov-report=html
+
+# Run specific test
+pytest tests/test_config.py
+```
+
+### Code Quality
+
+```bash
+# Format code
+ruff format .
+
+# Lint code
+ruff check .
+
+# Type check
+mypy .
+```
+
+## Documentation
+
+- **README**: Main project documentation
+- **Quick Start Guide**: `docs/guides/DEVELOPER_QUICK_START.md`
+- **Architecture Design**: `docs/development/ARCHITECTURE_DESIGN.md`
+- **Cursor Skill Guide**: `cursor_skill/README.md`
+- **Project Summary**: `SUMMARY.md`
+
+## Links
+
+- **Repository**: https://github.com/flashpoint493/auto-package-framework
+- **PyPI**: https://pypi.org/project/auto-package-framework/
+- **Documentation**: https://github.com/flashpoint493/auto-package-framework#readme
+- **Issues**: https://github.com/flashpoint493/auto-package-framework/issues
+- **Template Repository**: https://github.com/flashpoint493/python-package-template
+
+## Acknowledgments
+
+- **Template Source**: Based on [Python Package Template](https://github.com/flashpoint493/python-package-template)
+- **Template Inspiration**: Python Package Template references [AuroraView](https://github.com/loonghao/auroraview) project structure
+- **Dependencies**: Uses PyGithub, GitPython, Jinja2, and other excellent libraries
+- **AI Services**: Thanks to OpenAI and Anthropic for AI services
+
