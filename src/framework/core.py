@@ -57,6 +57,7 @@ class AutoPackageFramework:
         
         # 初始化代码生成器（新架构）
         # 代码生成器会在需要时按需创建，因为需要 project_path
+        self.code_generator = None
 
     def create_package(
         self,

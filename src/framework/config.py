@@ -6,6 +6,13 @@ from typing import Optional, Dict, Any
 import yaml
 from dotenv import load_dotenv
 
+# 尝试导入 ConfigManager 以支持从用户配置目录加载
+try:
+    from .config_manager import ConfigManager
+    _config_manager_available = True
+except ImportError:
+    _config_manager_available = False
+
 
 class Config:
     """框架配置管理类"""
@@ -19,6 +26,16 @@ class Config:
         """
         # 加载环境变量
         load_dotenv()
+        
+        # 如果可用，从用户配置目录加载配置
+        if _config_manager_available:
+            try:
+                config_manager = ConfigManager()
+                user_env_file = config_manager.get_config_dir() / ".env"
+                if user_env_file.exists():
+                    load_dotenv(user_env_file)
+            except Exception:
+                pass  # 忽略错误，继续使用默认配置
 
         # 默认配置路径
         if config_path is None:

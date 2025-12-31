@@ -29,7 +29,7 @@ pip install {{ cookiecutter.package_name }}[optional]
 from {{ cookiecutter.package_name }} import {{ cookiecutter.main_class }}
 
 # Create instance
-instance = {{ MAIN_CLASS }}.create("My App", config={...})
+instance = {{ cookiecutter.main_class }}.create("My App", config={...})
 instance.initialize()
 ```
 

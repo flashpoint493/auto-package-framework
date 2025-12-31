@@ -180,21 +180,52 @@ result = framework.create_package(
 
 ```bash
 # 基本使用
-auto-package \
+auto-package create \
     --project-name "my-package" \
     --idea "我的项目描述"
 
 # 完整流程（生成+GitHub+PyPI）
-auto-package \
+auto-package create \
     --project-name "my-package" \
     --idea "我的项目描述" \
     --github-repo "my-package" \
     --publish
 ```
 
+**配置API密钥（支持持续使用）:**
+
+```bash
+# 首次使用前配置API密钥
+auto-package config set-ai --provider openai --api-key "sk-xxxxx"
+
+# 配置后即可持续使用，无需每次重新配置
+auto-package create --project-name "my-package" --idea "我的项目描述"
+```
+
 ### Configuration
 
-**方式1: 环境变量（推荐）**
+**方式1: 使用CLI命令配置（推荐，支持持续使用）**
+
+```bash
+# 配置AI API密钥
+auto-package config set-ai --provider openai --api-key "sk-xxxxx" --model "gpt-4"
+
+# 配置GitHub Token
+auto-package config set-github --token "ghp_xxxxx" --username "your_username"
+
+# 配置PyPI Token
+auto-package config set-pypi --token "pypi-xxxxx" --username "your_username"
+
+# 查看当前配置
+auto-package config show
+
+# 清除所有配置
+auto-package config clear
+```
+
+配置会自动保存到 `~/.auto_package_framework/` 目录，后续使用无需重新配置。
+
+**方式2: 环境变量**
 
 ```bash
 export GITHUB_TOKEN=ghp_xxxxx
@@ -202,7 +233,7 @@ export PYPI_TOKEN=pypi-xxxxx
 export OPENAI_API_KEY=sk-xxxxx
 ```
 
-**方式2: 配置文件**
+**方式3: 配置文件**
 
 创建 `config.yaml`:
 
@@ -224,6 +255,28 @@ ai:
 ```
 
 > **注意**: 框架已内置完整的项目模板，无需额外配置。只有在需要使用自定义模板时才需要指定 `template_path`。
+
+### IDE Skill 接口
+
+框架提供了 IDE Skill 接口，使 AI IDE（如 Cursor）能够识别和使用框架的能力：
+
+```bash
+# 导出 skill 信息（JSON格式）
+auto-package skill --format json --output skill.json
+
+# 导出 skill 信息（Markdown格式）
+auto-package skill --format markdown --output skill.md
+```
+
+在 Python 中使用：
+
+```python
+from framework import get_skill_interface
+
+skill = get_skill_interface()
+capabilities = skill.get_capabilities()
+print(skill.get_skill_markdown())
+```
 
 ## Usage Patterns
 

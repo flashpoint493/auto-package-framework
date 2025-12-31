@@ -135,25 +135,74 @@ class CodeGeneratorFactory:
             raise ValueError(f"不支持的生成模式: {mode}")
 
 
-# 临时导入，避免循环依赖
-# 这些类将在后续步骤中实现
+# 导入 AIDeveloper 用于 API 代码生成
+from .ai_developer import AIDeveloper
+
+
 class APICodeGenerator(CodeGenerator):
-    """API 代码生成器（从 AIDeveloper 迁移）"""
+    """API 代码生成器（使用 AIDeveloper）"""
+    
+    def __init__(self, ai_developer: AIDeveloper):
+        """
+        初始化 API 代码生成器
+        
+        Args:
+            ai_developer: AIDeveloper 实例
+        """
+        self.ai_developer = ai_developer
     
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> Optional["APICodeGenerator"]:
-        """从配置创建实例"""
-        # 临时实现，后续会从 ai_developer.py 迁移
-        return None
+        """
+        从配置创建实例
+        
+        Args:
+            config: 配置字典，包含 api 配置
+            
+        Returns:
+            APICodeGenerator 实例，如果配置不完整返回 None
+        """
+        api_config = config.get("api", {})
+        provider = api_config.get("provider", "openai")
+        api_key = api_config.get("api_key")
+        model = api_config.get("model")
+        
+        if not api_key:
+            return None
+        
+        try:
+            ai_developer = AIDeveloper(
+                provider=provider,
+                api_key=api_key,
+                model=model,
+            )
+            return cls(ai_developer)
+        except Exception:
+            return None
     
-    def generate_code(self, *args, **kwargs) -> Dict[str, str]:
-        raise NotImplementedError("待从 AIDeveloper 迁移")
+    def generate_code(
+        self,
+        project_idea: str,
+        project_structure: Dict[str, Any],
+        existing_files: Optional[Dict[str, str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, str]:
+        """生成代码"""
+        return self.ai_developer.generate_code(
+            project_idea=project_idea,
+            project_structure=project_structure,
+            existing_files=existing_files,
+        )
     
     def can_generate(self) -> bool:
-        return False
+        """检查是否可以生成"""
+        return self.ai_developer is not None
     
     def get_status(self) -> str:
-        return "未实现"
+        """获取状态"""
+        if self.ai_developer:
+            return f"就绪 (Provider: {self.ai_developer.provider}, Model: {self.ai_developer.model})"
+        return "未就绪"
 
 
 class CursorCodeGenerator(CodeGenerator):
