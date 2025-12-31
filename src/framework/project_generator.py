@@ -137,7 +137,10 @@ class ProjectGenerator:
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
             # 处理文件
-            if item.suffix in [".md", ".txt", ".toml", ".yaml", ".yml", ".json"]:
+            # 处理 .template 文件（使用 Jinja2 渲染）
+            if item.suffix == ".template" or item.name.endswith(".template"):
+                self._process_template_file(item, output_file, replacements)
+            elif item.suffix in [".md", ".txt", ".toml", ".yaml", ".yml", ".json"]:
                 # 文本文件，进行替换
                 self._process_text_file(item, output_file, replacements)
             else:

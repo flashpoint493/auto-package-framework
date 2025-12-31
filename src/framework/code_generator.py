@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Dict, Any
 import sys
+import os
 
 
 class CodeGenerator(ABC):
@@ -216,6 +217,10 @@ class CursorCodeGenerator(CodeGenerator):
     ) -> str:
         """构建对话提示"""
         package_name = project_structure.get("package_name", "package")
+        project_name = project_structure.get("name", "Project")
+        
+        # 尝试读取 llms.txt 作为参考格式
+        llms_reference = self._load_llms_reference()
         
         prompt = f"""# Cursor Auto Processed Mode - 代码生成请求
 
