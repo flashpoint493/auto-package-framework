@@ -174,7 +174,7 @@ MIT License
 
 ## 🙏 致谢
 
-- 基于PROJECT_TEMPLATE模板
+- 基于 [Python Package Template](https://github.com/flashpoint493/python-package-template) 模板
 - 使用PyGithub、GitPython等优秀库
 - 感谢OpenAI和Anthropic提供的AI服务
 

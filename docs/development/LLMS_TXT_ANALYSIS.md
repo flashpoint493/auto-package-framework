@@ -48,7 +48,7 @@
 将通用化的 `llms.txt` 模板添加到项目模板中：
 
 ```
-PROJECT_TEMPLATE/
+模板仓库结构（[python-package-template](https://github.com/flashpoint493/python-package-template)）:
 ├── llms.txt.template  # 通用模板（使用 Jinja2 变量）
 └── ...
 ```

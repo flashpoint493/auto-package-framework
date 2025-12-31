@@ -25,7 +25,7 @@
 
 ### 方案 1: 作为模板文件（已实现）
 
-**位置**: `PROJECT_TEMPLATE/llms.txt.template`
+**位置**: 模板仓库中的 `llms.txt.template`（[python-package-template](https://github.com/flashpoint493/python-package-template)）
 
 **特点**:
 - 使用 Jinja2 模板语法
@@ -58,7 +58,7 @@
 ### 文件位置
 
 ```
-PROJECT_TEMPLATE/
+模板仓库结构（[python-package-template](https://github.com/flashpoint493/python-package-template)）:
 └── llms.txt.template  # Jinja2 模板文件
 ```
 
@@ -133,7 +133,7 @@ PROJECT_TEMPLATE/
 
 ## 📚 相关文件
 
-- `PROJECT_TEMPLATE/llms.txt.template` - 通用模板
+- 模板仓库中的 `llms.txt.template` - 通用模板（[python-package-template](https://github.com/flashpoint493/python-package-template)）
 - `docs/development/LLMS_TXT_ANALYSIS.md` - 分析文档
 - `src/framework/project_generator.py` - 模板处理逻辑
 - `src/framework/code_generator.py` - 代码生成器（使用模板）

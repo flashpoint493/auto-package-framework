@@ -412,9 +412,10 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ## Acknowledgments
 
-- 基于 [PROJECT_TEMPLATE](../PROJECT_TEMPLATE) 模板
-- 使用 PyGithub、GitPython 等优秀库
-- 感谢 OpenAI 和 Anthropic 提供的AI服务
+- **项目模板**: 基于 [Python Package Template](https://github.com/flashpoint493/python-package-template) 模板
+- **模板灵感**: Python Package Template 参考了 [AuroraView](https://github.com/loonghao/auroraview) 的项目结构
+- **依赖库**: 使用 PyGithub、GitPython 等优秀库
+- **AI服务**: 感谢 OpenAI 和 Anthropic 提供的AI服务
 
 ## Contact
 

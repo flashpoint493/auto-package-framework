@@ -36,7 +36,8 @@ ai:
   api_key: your_openai_key
   model: gpt-4
 
-template_path: ../PROJECT_TEMPLATE
+# template_path: /path/to/custom/template
+# 注意：框架已内置模板，通常无需指定 template_path
 ```
 
 **或者使用环境变量**:
@@ -232,7 +233,7 @@ pytest
 
 **解决**:
 - 检查 `config.yaml` 中的 `template_path`
-- 确认 `PROJECT_TEMPLATE` 目录存在
+- 确认模板路径配置正确（框架已内置模板，通常无需额外配置）
 - 使用绝对路径
 
 ## 📊 性能基准
