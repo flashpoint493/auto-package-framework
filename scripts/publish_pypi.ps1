@@ -1,5 +1,5 @@
 # 手动发布到 PyPI 的 PowerShell 脚本
-# 使用方法: .\scripts\manual_publish_pypi.ps1
+# 使用方法: .\scripts\publish_pypi.ps1
 
 Write-Host "🚀 开始手动发布到 PyPI..." -ForegroundColor Green
 

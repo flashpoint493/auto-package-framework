@@ -1,6 +1,6 @@
 #!/bin/bash
 # 手动发布到 PyPI 的 Bash 脚本
-# 使用方法: bash scripts/manual_publish_pypi.sh
+# 使用方法: bash scripts/publish_pypi.sh
 
 set -e
 

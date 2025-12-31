@@ -137,8 +137,9 @@ AI: "收到！我将执行以下步骤：
 ## 相关文档
 
 - [Auto Package Framework 主文档](../README.md)
-- [快速开始指南](../QUICK_START.md)
-- [工作流程说明](../SUMMARY.md)
+- [快速开始指南](../docs/guides/QUICK_START.md)
+- [工作流程说明](../docs/references/workflow_guide.md)
+- [项目结构说明](../PROJECT_STRUCTURE.md)
 
 ## 版本信息
 

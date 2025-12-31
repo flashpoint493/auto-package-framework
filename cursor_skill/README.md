@@ -88,9 +88,10 @@ python scripts/create_package.py \
 
 ## 📚 相关文档
 
-- [Cursor Skill 实现方案讨论](../CURSOR_SKILL_PROPOSAL.md)
+- [Cursor Skill 实现方案讨论](../docs/development/CURSOR_SKILL_PROPOSAL.md)
 - [Auto Package Framework 主文档](../README.md)
-- [快速开始指南](../QUICK_START.md)
+- [快速开始指南](../docs/guides/QUICK_START.md)
+- [项目结构说明](../PROJECT_STRUCTURE.md)
 
 ## 🐛 问题反馈
 
