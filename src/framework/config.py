@@ -124,6 +124,29 @@ class Config:
         return self.get("ai.model", "gpt-4")
 
     @property
+    def code_generation_mode(self) -> str:
+        """获取代码生成模式"""
+        return self.get("code_generation.mode", "auto")
+    
+    @property
+    def code_generation_config(self) -> Dict[str, Any]:
+        """获取代码生成配置"""
+        return {
+            "mode": self.code_generation_mode,
+            "api": {
+                "provider": self.ai_provider,
+                "api_key": self.ai_api_key,
+                "model": self.ai_model,
+            },
+            "cursor": {
+                "enabled": self.get("code_generation.cursor.enabled", True),
+                "auto_processed": self.get("code_generation.cursor.auto_processed", True),
+                "dialogue_file": self.get("code_generation.cursor.dialogue_file", ".cursor_dialogue.md"),
+                "timeout": self.get("code_generation.cursor.timeout", 300),
+            },
+        }
+    
+    @property
     def template_path(self) -> Path:
         """获取模板路径"""
         # 首先检查配置文件中指定的路径（允许用户自定义模板）

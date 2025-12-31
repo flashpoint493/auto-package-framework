@@ -8,7 +8,8 @@ from .config import Config
 from .project_generator import ProjectGenerator
 from .github_client import GitHubClient
 from .pypi_client import PyPIClient
-from .ai_developer import AIDeveloper
+from .ai_developer import AIDeveloper  # 保持向后兼容
+from .code_generator import CodeGenerator, CodeGeneratorFactory
 
 
 class AutoPackageFramework:
@@ -46,13 +47,16 @@ class AutoPackageFramework:
                 token=self.config.pypi_token,
             )
 
-        # 初始化AI开发者（如果配置了）
+        # 初始化AI开发者（如果配置了，保持向后兼容）
         if self.config.ai_api_key:
             self.ai_developer = AIDeveloper(
                 provider=self.config.ai_provider,
                 api_key=self.config.ai_api_key,
                 model=self.config.ai_model,
             )
+        
+        # 初始化代码生成器（新架构）
+        # 代码生成器会在需要时按需创建，因为需要 project_path
 
     def create_package(
         self,
