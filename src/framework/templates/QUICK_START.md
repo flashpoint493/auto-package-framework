@@ -7,8 +7,11 @@ This guide will help you set up a new project using this template.
 ## Step 1: Copy Template
 
 ```bash
-# Copy the PROJECT_TEMPLATE directory
-cp -r PROJECT_TEMPLATE your-project-name
+# Option 1: Use the template repository
+git clone https://github.com/flashpoint493/python-package-template.git your-project-name
+
+# Option 2: Copy from local PROJECT_TEMPLATE directory (if available)
+# cp -r PROJECT_TEMPLATE your-project-name
 cd your-project-name
 ```
 

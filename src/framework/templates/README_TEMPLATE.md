@@ -7,7 +7,7 @@ This directory contains a complete project template with all best practices and 
 ## 📁 Directory Structure
 
 ```
-PROJECT_TEMPLATE/
+项目模板结构（基于 [python-package-template](https://github.com/flashpoint493/python-package-template)）:
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml              # Continuous Integration
@@ -109,7 +109,11 @@ CI/CD automation:
 
 1. **Copy template to your project**
    ```bash
-   cp -r PROJECT_TEMPLATE your-project-name
+   # Option 1: Clone from GitHub
+   git clone https://github.com/flashpoint493/python-package-template.git your-project-name
+   
+   # Option 2: Copy from local directory (if available)
+   # cp -r PROJECT_TEMPLATE your-project-name
    cd your-project-name
    ```
 

@@ -184,6 +184,7 @@ class Config:
             f"找不到模板目录。请确保：\n"
             f"1. 模板已内置到包中（位于 {builtin_template}）\n"
             f"2. 或在配置文件中指定 template_path\n"
-            f"3. 或在项目根目录存在 PROJECT_TEMPLATE 目录"
+            f"3. 或在项目根目录存在 PROJECT_TEMPLATE 目录（开发环境）\n"
+            f"   模板仓库: https://github.com/flashpoint493/python-package-template"
         )
 
