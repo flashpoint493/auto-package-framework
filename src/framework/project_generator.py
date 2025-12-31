@@ -77,6 +77,9 @@ class ProjectGenerator:
         # 生成包名（从项目名转换）
         package_name = project_name.lower().replace("-", "_").replace(" ", "_")
 
+        # 计算主类名（从项目名生成，如 "my-package" -> "MyPackage"）
+        main_class = "".join(word.capitalize() for word in project_name.replace("_", "-").split("-"))
+        
         # 默认替换映射
         default_replacements = {
             "[Project Name]": project_name,
@@ -87,6 +90,18 @@ class ProjectGenerator:
             "USERNAME": replacements.get("USERNAME", "USERNAME"),
             "your.email@example.com": replacements.get("email", "your.email@example.com"),
             "Your Name": replacements.get("author", "Your Name"),
+            # llms.txt 模板变量
+            "PACKAGE_NAME": package_name,
+            "PROJECT_DESCRIPTION": replacements.get("PROJECT_DESCRIPTION", f"A Python package: {project_name}"),
+            "MAIN_FUNCTIONALITY": replacements.get("MAIN_FUNCTIONALITY", "provides core functionality"),
+            "ADDITIONAL_DESCRIPTION": replacements.get("ADDITIONAL_DESCRIPTION", ""),
+            "PYTHON_VERSION": replacements.get("PYTHON_VERSION", "3.8"),
+            "PLATFORMS": replacements.get("PLATFORMS", "Windows, macOS, Linux"),
+            "LICENSE": replacements.get("LICENSE", "MIT"),
+            "MAIN_CLASS": main_class,
+            "UTILITY_CLASS": replacements.get("UTILITY_CLASS", "Utility"),
+            "INTEGRATION_CLASS": replacements.get("INTEGRATION_CLASS", "Integration"),
+            "UTILITY_FUNCTION": replacements.get("UTILITY_FUNCTION", "utility_function"),
         }
 
         # 合并用户提供的替换
@@ -172,6 +187,47 @@ class ProjectGenerator:
             # 如果处理失败，直接复制
             print(f"警告: 处理文件 {source} 时出错: {e}，将直接复制")
             shutil.copy2(source, target)
+    
+    def _process_template_file(
+        self, source: Path, target: Path, replacements: Dict[str, str]
+    ) -> None:
+        """
+        处理模板文件（.template），使用 Jinja2 渲染
+        
+        Args:
+            source: 源文件路径
+            target: 目标文件路径（移除 .template 后缀）
+            replacements: 替换映射
+        """
+        try:
+            # 移除 .template 后缀作为目标文件名
+            if target.suffix == ".template" or target.name.endswith(".template"):
+                # 移除 .template 后缀
+                target = target.with_suffix("")
+                if target.name.endswith(".template"):
+                    target = target.parent / target.name.replace(".template", "")
+            
+            # 获取模板相对路径
+            template_name = source.relative_to(self.template_path).as_posix()
+            
+            # 使用 Jinja2 渲染模板
+            template = self.env.get_template(template_name)
+            
+            # 准备模板变量（使用 replacements，已经包含了所有需要的变量）
+            template_vars = replacements.copy()
+            
+            # 渲染模板
+            content = template.render(**template_vars)
+            
+            # 写入目标文件
+            target.write_text(content, encoding="utf-8")
+        except Exception as e:
+            # 如果模板渲染失败，尝试作为普通文本文件处理
+            print(f"警告: 模板渲染失败 {source}, 使用普通文本处理: {e}")
+            # 移除 .template 后缀后处理
+            if target.suffix == ".template" or target.name.endswith(".template"):
+                target = target.with_suffix("")
+            self._process_text_file(source, target, replacements)
 
     def _write_project_idea(
         self, output_path: Path, project_idea: str, project_name: str
