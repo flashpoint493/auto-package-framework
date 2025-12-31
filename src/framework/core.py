@@ -106,12 +106,13 @@ class AutoPackageFramework:
             )
             result["project_path"] = str(project_path)
 
-            # 步骤2: AI生成代码
-            if self.ai_developer:
-                result["steps"].append("AI生成代码")
-                self._generate_code_with_ai(project_path, project_name, project_idea)
-            else:
-                result["steps"].append("跳过AI代码生成（未配置AI）")
+            # 步骤2: 代码生成（支持多种模式）
+            code_gen_result = self._generate_code(
+                project_path, project_name, project_idea
+            )
+            result["steps"].append(code_gen_result["step"])
+            if code_gen_result.get("warnings"):
+                result.setdefault("warnings", []).extend(code_gen_result["warnings"])
 
             # 步骤3: 创建GitHub仓库
             if self.github_client and github_repo:
@@ -136,6 +137,102 @@ class AutoPackageFramework:
             result["success"] = False
 
         return result
+
+    def _generate_code(
+        self, project_path: Path, project_name: str, project_idea: str
+    ) -> Dict[str, Any]:
+        """
+        生成代码（支持多种模式）
+
+        Args:
+            project_path: 项目路径
+            project_name: 项目名称
+            project_idea: 项目想法
+
+        Returns:
+            生成结果字典
+        """
+        result = {
+            "step": "跳过代码生成",
+            "warnings": [],
+        }
+        
+        # 获取代码生成器
+        code_gen = self._get_code_generator(project_path)
+        
+        if not code_gen:
+            # 回退到旧的 AIDeveloper（向后兼容）
+            if self.ai_developer:
+                self._generate_code_with_ai(project_path, project_name, project_idea)
+                result["step"] = "AI生成代码（使用旧API模式）"
+            else:
+                result["step"] = "跳过代码生成（未配置代码生成器）"
+            return result
+        
+        try:
+            # 读取PROJECT_IDEA.md作为上下文
+            idea_file = project_path / "PROJECT_IDEA.md"
+            existing_files = {}
+            if idea_file.exists():
+                existing_files["PROJECT_IDEA.md"] = idea_file.read_text(encoding="utf-8")
+
+            # 读取pyproject.toml获取包名
+            pyproject_file = project_path / "pyproject.toml"
+            package_name = project_name.lower().replace("-", "_")
+            if pyproject_file.exists():
+                content = pyproject_file.read_text(encoding="utf-8")
+                import re
+                match = re.search(r'name = "([^"]+)"', content)
+                if match:
+                    package_name = match.group(1)
+
+            # 生成代码
+            project_structure = {
+                "name": project_name,
+                "package_name": package_name,
+                "python_version": "3.8+",
+            }
+
+            generated_files = code_gen.generate_code(
+                project_idea=project_idea,
+                project_structure=project_structure,
+                existing_files=existing_files,
+            )
+
+            # 验证结果
+            validation = code_gen.validate_result(generated_files)
+            if validation.get("warnings"):
+                result["warnings"].extend(validation["warnings"])
+
+            # 写入生成的文件
+            for file_path, code_content in generated_files.items():
+                full_path = project_path / file_path
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+                full_path.write_text(code_content, encoding="utf-8")
+
+            result["step"] = f"代码生成完成（模式: {code_gen.get_status()}）"
+            result["files_generated"] = len(generated_files)
+            
+        except Exception as e:
+            result["step"] = f"代码生成失败: {e}"
+            result["warnings"].append(str(e))
+        
+        return result
+    
+    def _get_code_generator(self, project_path: Path) -> Optional[CodeGenerator]:
+        """获取代码生成器实例"""
+        if self.code_generator:
+            return self.code_generator
+        
+        # 创建代码生成器
+        code_gen_config = self.config.code_generation_config
+        self.code_generator = CodeGeneratorFactory.create(
+            mode=code_gen_config["mode"],
+            config=code_gen_config,
+            project_path=project_path,
+        )
+        
+        return self.code_generator
 
     def _generate_code_with_ai(
         self, project_path: Path, project_name: str, project_idea: str
