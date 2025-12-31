@@ -135,6 +135,8 @@ Auto Package Framework 是一个自动化框架，能够帮助你从想法到发
 
 ## Quick Start
 
+> 📖 **新手指南**: 如果你是第一次使用，建议先阅读 [开发者快速开始指南](docs/guides/DEVELOPER_QUICK_START.md)，了解如何使用 API Key 或 Cursor IDE 模式创建你的第一个包。
+
 ### Installation
 
 #### Basic Installation
